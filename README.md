@@ -1,12 +1,33 @@
 # Mr_Cooper_231801049
-Long Code Round
+#Long Code Round
+						            BUS RESERVATION SYSTEM - UC -013
+Problem Statement:
 
-I am going to design a bus reservation system.
+I am going to design a bus reservation system that is easily accessible by the users.
 
 The system has 3 main users they are, 
 		-->Passenger
 		-->Bus Operator(Admin)
 		-->System(Schedule Manager)
+
+
+Approach & Logic used:
+
+Tech Stacks used :
+
+Frontend --
+	*html
+	*Inline CSS
+	*java script
+
+Backend --
+	*Python
+	*Flask
+
+Database --
+	*SQLite3
+
+
 Flow :
 
 Passenger --
@@ -31,9 +52,11 @@ Admin (Bus operator) --
 
 1. Checks each passenger and marks them travelled.
 
-System Admin (Bus Scheduler)
+System Admin (Bus Scheduler) --
 
-1. 
+1. System admin can add buses.
+
+
  
 Tables used:
 
@@ -50,10 +73,22 @@ Passenger - passengerid, name, phone , email, idproof --searchbus(), bookticket(
 Cancelpolicy - hoursbeforedeparture, refund percent -- calculaterefund(hrsremaining)
 
 
-Refund policy
+Refund policy:
 
 >24 hrs - 90% refund
-12-24 hrs - 75% refund
+12-24 hrs - 75% refundz
 6-12 hrs - 50% refund
 1-6 hrs -  25% refund
 <1 hr   - no refund
+
+
+How to run the code :
+	
+	*directly run -- bus_reservation.py (since we already have bus.db)
+		code:
+			python bus_reservation.py
+
+	*else run database.py and then bus_reservation.py(Optional)
+		code:
+			python database.py
+			python bus_reservation.py
