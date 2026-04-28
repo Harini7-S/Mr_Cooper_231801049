@@ -58,7 +58,7 @@ def init_db():
                  expiretime DATETIME
                  )''')
 
-    # Insert mock data if empty
+    # Mock data
     c.execute("SELECT COUNT(*) FROM bus")
     if c.fetchone()[0] == 0:
         c.executemany("INSERT INTO bus (busnumber, type, totalseats) VALUES (?, ?, ?)", [
