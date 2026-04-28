@@ -63,7 +63,7 @@ def search():
     c = conn.cursor()
     c.execute("DELETE FROM seathold WHERE expiretime < ?", (now.isoformat(),))
     conn.commit()
-
+#get schedules for the day
     def get_schedules(target_date):
         start = target_date.replace(hour=0, minute=0, second=0)
         end = start + timedelta(days=1)
@@ -147,7 +147,7 @@ def hold_seats():
     conn.close()
     return jsonify({"holdid": holdid, "expiretime": expiretime.isoformat()})
 
-#booking
+#booking and pnr generation
 @app.route('/api/book', methods=['POST'])
 def book():
     data = request.json
@@ -174,7 +174,7 @@ def book():
     conn.commit()
     conn.close()
     return jsonify({"pnr": pnr})
-
+#view ticket
 @app.route('/api/ticket/<pnr>', methods=['GET'])
 def get_ticket(pnr):
     conn = get_db()
@@ -192,6 +192,7 @@ def get_ticket(pnr):
     if not ticket: return jsonify({"error": "booking not found error"}), 404
     return jsonify(dict(ticket))
 
+#cancellation - passenger
 @app.route('/api/cancel', methods=['POST'])
 def cancel():
     pnr = request.json.get('pnr')
