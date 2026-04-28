@@ -1,4 +1,4 @@
-# Mr_Cooper_231801049 - LOng code round
+# Mr_Cooper_231801049 - Long code round
 						            BUS RESERVATION SYSTEM - UC -013
 Problem Statement:
 
