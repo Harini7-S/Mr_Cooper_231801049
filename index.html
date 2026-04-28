@@ -9,12 +9,12 @@
     
     <nav>
         <button onclick="show('passenger-ui')">Passenger Portal</button>
-        <button onclick="show('operator-ui')">Bus Operator (Admin)</button>
-        <button onclick="show('manager-ui')">Schedule Manager (SysAdmin)</button>
+        <button onclick="show('operator-ui')">Bus Operator</button>
+        <button onclick="show('manager-ui')">Schedule Manager</button>
     </nav>
     <hr>
 
-    <!-- PASSENGER UI -->
+    <!-- passenger -->
     <div id="passenger-ui" class="view">
         <h2>Passenger Portal</h2>
         <button onclick="showPass('search-sec')">Search Tickets</button>
@@ -42,9 +42,9 @@
         <div id="book-sec" class="pass-view" style="display:none;">
             <h3>Passenger Details (Hold: <span id="timer">8:00</span>)</h3>
             <form id="book-form">
-                Name: <input id="p-name" required><br>
-                Phone: <input id="p-phone" required><br>
-                Email: <input id="p-email" type="email" required><br>
+                Name: <input id="p-name" required><br><br>
+                Phone: <input id="p-phone" required><br><br>
+                Email: <input id="p-email" type="email" required><br><br>
                 <div id="genders"></div>
                 <p id="fare-txt"></p>
                 <button type="submit">Pay & Book</button>
@@ -60,7 +60,7 @@
         </div>
     </div>
 
-    <!-- OPERATOR UI -->
+    <!-- bus operator -->
     <div id="operator-ui" class="view" style="display:none;">
         <h2>Bus Operator (Admin)</h2>
         <p>Login required for Operator.</p>
@@ -75,7 +75,7 @@
         </div>
     </div>
 
-    <!-- MANAGER UI -->
+    <!-- schedule manager -->
     <div id="manager-ui" class="view" style="display:none;">
         <h2>Schedule Manager (SysAdmin)</h2>
         <p>Login required for Manager.</p>
@@ -104,7 +104,7 @@
             document.getElementById(id).style.display = 'block';
         }
 
-        // Init
+        
         document.addEventListener('DOMContentLoaded', () => {
             const d = document.getElementById('date');
             d.min = new Date().toISOString().split('T')[0];

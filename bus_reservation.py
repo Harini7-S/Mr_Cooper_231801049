@@ -8,6 +8,8 @@ import os
 
 app = Flask(__name__)
 
+#database connection
+
 def get_db():
     conn = sqlite3.connect('bus.db', check_same_thread=False)
     conn.row_factory = sqlite3.Row
@@ -17,6 +19,7 @@ def get_db():
 def index():
     return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'index.html')
 
+#refund calculation based on hours before departure
 def calculate_refund(deptime_str):
     deptime = datetime.fromisoformat(deptime_str)
     now = datetime.now()
@@ -28,6 +31,7 @@ def calculate_refund(deptime_str):
     elif 1 < hrs <= 6: return 0.25
     return 0.0
 
+#API endpoints
 @app.route('/api/locations', methods=['GET'])
 def get_locations():
     conn = get_db()
@@ -39,6 +43,7 @@ def get_locations():
     conn.close()
     return jsonify({"sources": sources, "destinations": dests})
 
+#search
 @app.route('/api/search', methods=['GET'])
 def search():
     source = request.args.get('source')
@@ -109,6 +114,7 @@ def search():
     conn.close()
     return jsonify({"schedules": schedules, "suggestion": suggestion, "ac_message": ac_msg})
 
+#seats hold and booking
 @app.route('/api/hold', methods=['POST'])
 def hold_seats():
     data = request.json
@@ -141,6 +147,7 @@ def hold_seats():
     conn.close()
     return jsonify({"holdid": holdid, "expiretime": expiretime.isoformat()})
 
+#booking
 @app.route('/api/book', methods=['POST'])
 def book():
     data = request.json
@@ -203,7 +210,7 @@ def cancel():
     conn.commit()
     conn.close()
     return jsonify({"refund_percentage": f"{pct*100}%", "refund_amount": ticket['fare'] * pct})
-
+#boarding - bus operator
 @app.route('/api/admin/board', methods=['POST'])
 def board():
     pnr = request.json.get('pnr')
@@ -216,7 +223,7 @@ def board():
     conn.commit()
     conn.close()
     return jsonify({"message": f"PNR {pnr} marked as TRAVELLED."})
-
+#adding bus - bus scheduer
 @app.route('/api/admin/addbus', methods=['POST'])
 def addbus():
     data = request.json
