@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bus System</title>
+</head>
+<body>
+
+    <h1>Bus Reservation System</h1>
+    
+    <nav>
+        <button onclick="show('passenger-ui')">Passenger Portal</button>
+        <button onclick="show('operator-ui')">Bus Operator (Admin)</button>
+        <button onclick="show('manager-ui')">Schedule Manager (SysAdmin)</button>
+    </nav>
+    <hr>
+
+    <!-- PASSENGER UI -->
+    <div id="passenger-ui" class="view">
+        <h2>Passenger Portal</h2>
+        <button onclick="showPass('search-sec')">Search Tickets</button>
+        <button onclick="showPass('manage-sec')">My Bookings</button>
+        <br><br>
+
+        <div id="search-sec" class="pass-view">
+            <form id="search-form">
+                From: <select id="source"></select>
+                To: <select id="dest"></select>
+                Date: <input type="date" id="date" required>
+                <button type="submit">Search</button>
+            </form>
+            <p id="msg"></p>
+            <div id="bus-list"></div>
+        </div>
+
+        <div id="seat-sec" class="pass-view" style="display:none;">
+            <h3>Select Seats (1 & 2 are Ladies Only)</h3>
+            <div id="seat-map"></div>
+            <p>Selected: <span id="sel-seats"></span></p>
+            <button id="btn-hold" onclick="holdSeats()">Proceed</button>
+        </div>
+
+        <div id="book-sec" class="pass-view" style="display:none;">
+            <h3>Passenger Details (Hold: <span id="timer">8:00</span>)</h3>
+            <form id="book-form">
+                Name: <input id="p-name" required><br>
+                Phone: <input id="p-phone" required><br>
+                Email: <input id="p-email" type="email" required><br>
+                <div id="genders"></div>
+                <p id="fare-txt"></p>
+                <button type="submit">Pay & Book</button>
+            </form>
+        </div>
+
+        <div id="manage-sec" class="pass-view" style="display:none;">
+            <h3>Find Ticket</h3>
+            <form id="pnr-form">
+                PNR: <input id="pnr-input" required> <button type="submit">Find</button>
+            </form>
+            <div id="ticket-info"></div>
+        </div>
+    </div>
+
+    <!-- OPERATOR UI -->
+    <div id="operator-ui" class="view" style="display:none;">
+        <h2>Bus Operator (Admin)</h2>
+        <p>Login required for Operator.</p>
+        <form id="op-login" onsubmit="opLogin(event)">
+            User: <input id="op-user" value="admin"> Pass: <input type="password" id="op-pass" value="admin123">
+            <button type="submit">Login</button>
+        </form>
+        <div id="op-dashboard" style="display:none;">
+            <h3>Mark Passenger Boarded</h3>
+            PNR: <input id="board-pnr"> <button onclick="boardPassenger()">Mark TRAVELLED</button>
+            <p id="op-msg"></p>
+        </div>
+    </div>
+
+    <!-- MANAGER UI -->
+    <div id="manager-ui" class="view" style="display:none;">
+        <h2>Schedule Manager (SysAdmin)</h2>
+        <p>Login required for Manager.</p>
+        <form id="mgr-login" onsubmit="mgrLogin(event)">
+            User: <input id="mgr-user" value="sysadmin"> Pass: <input type="password" id="mgr-pass" value="sysadmin123">
+            <button type="submit">Login</button>
+        </form>
+        <div id="mgr-dashboard" style="display:none;">
+            <h3>Add New Bus</h3>
+            Number: <input id="m-busno"> Type: <select id="m-type"><option>AC</option><option>Non-AC</option></select>
+            Seats: <input type="number" id="m-seats" value="20">
+            <button onclick="addBus()">Add Bus</button>
+            <p id="mgr-msg"></p>
+        </div>
+    </div>
+
+    <script>
+        let state = { bus: null, seats: [], holdId: null, timer: null };
+
+        function show(id) {
+            document.querySelectorAll('.view').forEach(e => e.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
+        }
+        function showPass(id) {
+            document.querySelectorAll('.pass-view').forEach(e => e.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            const d = document.getElementById('date');
+            d.min = new Date().toISOString().split('T')[0];
+            d.value = d.min;
+            fetch('/api/locations').then(r=>r.json()).then(data=>{
+                data.sources.forEach(l=>document.getElementById('source').innerHTML+=`<option>${l}</option>`);
+                data.destinations.forEach(l=>document.getElementById('dest').innerHTML+=`<option>${l}</option>`);
+            });
+        });
+
+        // Passenger Search
+        document.getElementById('search-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const s = document.getElementById('source').value, d = document.getElementById('dest').value, date = document.getElementById('date').value;
+            const res = await fetch(`/api/search?source=${s}&destination=${d}&date=${date}`);
+            const data = await res.json();
+            if(!res.ok) return alert(data.error);
+            document.getElementById('msg').innerText = data.suggestion || data.ac_message || "";
+            
+            let html = '<table border="1"><tr><th>Bus</th><th>Type</th><th>Fare</th><th>Seats</th><th>Action</th></tr>';
+            data.schedules.forEach(b => {
+                html += `<tr><td>${b.busnumber}</td><td>${b.type}</td><td>${b.fare}</td><td>${b.available_seats}/${b.totalseats}</td>
+                <td><button onclick='pickSeats(${JSON.stringify(b)})'>Select</button></td></tr>`;
+            });
+            document.getElementById('bus-list').innerHTML = html + '</table>';
+        };
+
+        function pickSeats(bus) {
+            state.bus = bus; state.seats = [];
+            let html = '';
+            for(let i=1; i<=bus.totalseats; i++) {
+                let status = bus.booked_seats.includes(i) ? 'disabled' : '';
+                let label = (i===1||i===2) ? `${i}(L)` : i;
+                html += `<button id="s-${i}" ${status} onclick="toggle(${i})">${label}</button> `;
+            }
+            document.getElementById('seat-map').innerHTML = html;
+            document.getElementById('sel-seats').innerText = '';
+            showPass('seat-sec');
+        }
+
+        function toggle(i) {
+            const btn = document.getElementById(`s-${i}`);
+            if(state.seats.includes(i)) {
+                state.seats = state.seats.filter(x=>x!==i);
+                btn.style.background = '';
+            } else {
+                if(state.seats.length>=6) return alert("Max 6 seats");
+                state.seats.push(i);
+                btn.style.background = 'green';
+            }
+            document.getElementById('sel-seats').innerText = state.seats.join(',');
+        }
+
+        async function holdSeats() {
+            if(!state.seats.length) return;
+            const ladies = state.seats.filter(x=>x===1||x===2);
+            document.getElementById('genders').innerHTML = '';
+            ladies.forEach((s, idx) => {
+                document.getElementById('genders').innerHTML += `Seat ${s} Gender: <select id="g-${idx}"><option value="F">Female</option><option value="M">Male</option></select><br>`;
+            });
+
+            const res = await fetch('/api/hold', {
+                method: 'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({scheduleid: state.bus.scheduleid, seats: state.seats})
+            });
+            const data = await res.json();
+            if(!res.ok) { alert(data.error); return showPass('search-sec'); }
+            state.holdId = data.holdid;
+            
+            let f = state.bus.fare * state.seats.length;
+            if(state.seats.length>4) f *= 0.9;
+            document.getElementById('fare-txt').innerText = `Total: Rs.${f}`;
+            
+            let exp = new Date(data.expiretime);
+            if(state.timer) clearInterval(state.timer);
+            state.timer = setInterval(()=>{
+                let diff = exp - new Date();
+                if(diff<=0) { clearInterval(state.timer); alert("Expired"); showPass('search-sec'); }
+                else document.getElementById('timer').innerText = Math.floor((diff/1000/60)%60)+":"+Math.floor((diff/1000)%60);
+            }, 1000);
+            showPass('book-sec');
+        }
+
+        document.getElementById('book-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const ladies = state.seats.filter(x=>x===1||x===2);
+            for(let i=0; i<ladies.length; i++) {
+                if(document.getElementById(`g-${i}`).value==='M') return alert("Males cannot book Ladies seat.");
+            }
+            const res = await fetch('/api/book', {
+                method: 'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    holdid: state.holdId, name: document.getElementById('p-name').value,
+                    phone: document.getElementById('p-phone').value, email: document.getElementById('p-email').value
+                })
+            });
+            const data = await res.json();
+            if(!res.ok) return alert(data.error);
+            clearInterval(state.timer);
+            alert(`Booking Confirmed! PNR: ${data.pnr}`);
+            showPass('search-sec');
+        };
+
+        // Manage
+        document.getElementById('pnr-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const pnr = document.getElementById('pnr-input').value;
+            const res = await fetch(`/api/ticket/${pnr}`);
+            const t = await res.json();
+            if(!res.ok) return alert(t.error);
+            let html = `PNR: ${t.pnr}<br>Name: ${t.name}<br>Status: ${t.status}<br>Route: ${t.source}-${t.destination}<br>`;
+            if(t.status!=='CANCELLED') html += `<button onclick="cancelTkt('${pnr}')">Cancel</button>`;
+            document.getElementById('ticket-info').innerHTML = html;
+        };
+
+        async function cancelTkt(pnr) {
+            if(!confirm("Cancel?")) return;
+            const res = await fetch('/api/cancel', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({pnr})});
+            const data = await res.json();
+            if(!res.ok) return alert(data.error);
+            alert(`Refund: Rs.${data.refund_amount}`);
+            document.getElementById('ticket-info').innerHTML = "Cancelled.";
+        }
+
+        // Admin functions
+        function opLogin(e) {
+            e.preventDefault();
+            if(document.getElementById('op-user').value==='admin') {
+                document.getElementById('op-login').style.display='none';
+                document.getElementById('op-dashboard').style.display='block';
+            } else alert("Invalid");
+        }
+
+        async function boardPassenger() {
+            const pnr = document.getElementById('board-pnr').value;
+            const res = await fetch('/api/admin/board', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({pnr})});
+            const data = await res.json();
+            document.getElementById('op-msg').innerText = data.error || data.message;
+        }
+
+        function mgrLogin(e) {
+            e.preventDefault();
+            if(document.getElementById('mgr-user').value==='sysadmin') {
+                document.getElementById('mgr-login').style.display='none';
+                document.getElementById('mgr-dashboard').style.display='block';
+            } else alert("Invalid");
+        }
+
+        async function addBus() {
+            const num = document.getElementById('m-busno').value;
+            const type = document.getElementById('m-type').value;
+            const seats = document.getElementById('m-seats').value;
+            const res = await fetch('/api/admin/addbus', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({busnumber:num, type:type, totalseats:seats})});
+            const data = await res.json();
+            document.getElementById('mgr-msg').innerText = data.message;
+        }
+    </script>
+
+</body>
+</html>

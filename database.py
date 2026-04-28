@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import datetime, timedelta
+import json
 
 def init_db():
     conn = sqlite3.connect('bus.db')
@@ -61,23 +62,17 @@ def init_db():
     c.execute("SELECT COUNT(*) FROM bus")
     if c.fetchone()[0] == 0:
         c.executemany("INSERT INTO bus (busnumber, type, totalseats) VALUES (?, ?, ?)", [
-            ('TN-01-AB-1234', 'AC', 40),
-            ('TN-02-CD-5678', 'Non-AC', 40),
-            ('TN-03-EF-9012', 'AC', 40),
-            ('TN-04-GH-3456', 'Non-AC', 40)
+            ('TN-01-AB-1234', 'AC', 20),
+            ('TN-02-CD-5678', 'Non-AC', 20)
         ])
         
         c.executemany("INSERT INTO route (source, destination, distance, duration) VALUES (?, ?, ?, ?)", [
-            ('Chennai', 'Bangalore', 350.0, 6.5),
-            ('Chennai', 'Coimbatore', 500.0, 9.0),
-            ('Bangalore', 'Chennai', 350.0, 6.5),
-            ('Coimbatore', 'Chennai', 500.0, 9.0)
+            ('Chennai', 'Bangalore', 350.0, 6.5)
         ])
 
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        for i in range(10): # Schedules for next 10 days
+        for i in range(10): 
             d_date = today + timedelta(days=i)
-            # Chennai to Bangalore
             dep1 = d_date + timedelta(hours=22, minutes=0)
             arr1 = dep1 + timedelta(hours=6, minutes=30)
             c.execute("INSERT INTO schedule (busid, routeid, departuretime, arrivaltime, fare) VALUES (?, ?, ?, ?, ?)", (1, 1, dep1, arr1, 800.0))
@@ -86,14 +81,9 @@ def init_db():
             arr2 = dep2 + timedelta(hours=6, minutes=30)
             c.execute("INSERT INTO schedule (busid, routeid, departuretime, arrivaltime, fare) VALUES (?, ?, ?, ?, ?)", (2, 1, dep2, arr2, 500.0))
 
-            # Chennai to Coimbatore
-            dep3 = d_date + timedelta(hours=21, minutes=30)
-            arr3 = dep3 + timedelta(hours=9, minutes=0)
-            c.execute("INSERT INTO schedule (busid, routeid, departuretime, arrivaltime, fare) VALUES (?, ?, ?, ?, ?)", (3, 2, dep3, arr3, 1000.0))
-
     conn.commit()
     conn.close()
-    print("Database initialized successfully.")
 
 if __name__ == '__main__':
     init_db()
+    print("Database initialized successfully.")
